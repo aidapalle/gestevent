@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GestEvent — Control de Equipos</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, sans-serif; background: #f5f5f3; color: #1a1a18; min-height: 100vh; }
+.topbar { background: #fff; border-bottom: 0.5px solid #ddd; padding: 0 20px; height: 52px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+.topbar h1 { font-size: 15px; font-weight: 500; }
+.tabs { display: flex; }
+.tab-btn { padding: 6px 18px; font-size: 13px; border: 0.5px solid #ddd; background: #f5f5f3; cursor: pointer; color: #666; }
+.tab-btn:first-child { border-radius: 8px 0 0 8px; }
+.tab-btn:last-child { border-radius: 0 8px 8px 0; }
+.tab-btn.active { background: #1a1a18; color: #fff; border-color: #1a1a18; }
+.page { display: none; padding: 20px; max-width: 860px; margin: 0 auto; }
+.page.active { display: block; }
+.card { background: #fff; border: 0.5px solid #ddd; border-radius: 12px; padding: 20px; margin-bottom: 14px; }
+.card h2 { font-size: 14px; font-weight: 500; margin-bottom: 14px; }
+label { font-size: 12px; color: #666; display: block; margin-bottom: 4px; margin-top: 10px; }
+input, select, textarea { width: 100%; padding: 9px 12px; border: 0.5px solid #ddd; border-radius: 8px; font-size: 14px; background: #fff; color: #1a1a18; outline: none; font-family: system-ui, sans-serif; }
+input:focus, select:focus, textarea:focus { border-color: #888; }
+textarea { resize: vertical; min-height: 80px; font-family: monospace; font-size: 13px; }
+.btn { padding: 8px 16px; border-radius: 8px; border: 0.5px solid #ddd; font-size: 13px; cursor: pointer; background: #fff; color: #1a1a18; transition: background .15s; }
+.btn:hover { background: #f5f5f3; }
+.btn-primary { background: #1a1a18; color: #fff; border-color: #1a1a18; }
+.btn-primary:hover { background: #333; }
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+.flex { display: flex; gap: 8px; align-items: center; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+.badge { display: inline-flex; align-items: center; font-size: 11px; padding: 2px 8px; border-radius: 20px; font-weight: 500; white-space: nowrap; }
+.b-ok   { background: #EAF3DE; color: #3B6D11; }
+.b-err  { background: #FCEBEB; color: #A32D2D; }
+.b-warn { background: #FAEEDA; color: #854F0B; }
+.b-info { background: #E6F1FB; color: #185FA5; }
+.b-gray { background: #F1EFE8; color: #5F5E5A; }
+.accion-bar { display: flex; gap: 8px; margin-top: 6px; margin-bottom: 14px; }
+.accion-btn { flex: 1; padding: 12px; border-radius: 8px; border: 1.5px solid #ddd; background: #f5f5f3; font-size: 15px; font-weight: 500; cursor: pointer; text-align: center; transition: all .15s; }
+.accion-btn.active-entrega  { background: #EAF3DE; border-color: #3B6D11; color: #3B6D11; }
+.accion-btn.active-recogida { background: #E6F1FB; border-color: #185FA5; color: #185FA5; }
+.scan-input { font-size: 20px; font-weight: 500; letter-spacing: 3px; text-align: center; }
+.scan-list { max-height: 320px; overflow-y: auto; }
+.scan-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 0.5px solid #eee; font-size: 13px; }
+.scan-item:last-child { border-bottom: none; }
+.empty { text-align: center; color: #999; font-size: 13px; padding: 24px; }
+.alert { padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 10px; }
+.alert-ok   { background: #EAF3DE; color: #3B6D11; border: 0.5px solid #C0DD97; }
+.alert-err  { background: #FCEBEB; color: #A32D2D; border: 0.5px solid #F7C1C1; }
+.alert-warn { background: #FAEEDA; color: #854F0B; border: 0.5px solid #FAC775; }
+.spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #ddd; border-top-color: #1a1a18; border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; margin-right: 6px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.tabla-header { display: grid; grid-template-columns: 1fr 1.5fr 1fr 1fr 1fr; gap: 8px; padding: 8px 12px; font-size: 11px; color: #666; font-weight: 500; text-transform: uppercase; border-bottom: 1px solid #eee; }
+.tabla-row { display: grid; grid-template-columns: 1fr 1.5fr 1fr 1fr 1fr; gap: 8px; padding: 10px 12px; border-bottom: 0.5px solid #eee; font-size: 13px; align-items: center; }
+.tabla-row:last-child { border-bottom: none; }
+.row-entrega { background: #f8fdf5; }
+.row-recogida { background: #f0f7ff; }
+.stats-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+.stat-box { background: #fff; border: 0.5px solid #ddd; border-radius: 10px; padding: 12px; text-align: center; }
+.stat-box .val { font-size: 26px; font-weight: 500; }
+.stat-box .lbl { font-size: 11px; color: #666; margin-top: 2px; }
+.dup-alert { background: #FCEBEB; border: 1.5px solid #E24B4A; border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #A32D2D; font-weight: 500; margin-top: 8px; display: none; }
+.divider { border: none; border-top: 0.5px solid #eee; margin: 14px 0; }
+@media (max-width: 580px) {
+  .tabla-header, .tabla-row { grid-template-columns: 1fr 1fr 1fr; }
+  .tabla-header span:nth-child(4), .tabla-row span:nth-child(4),
+  .tabla-header span:nth-child(5), .tabla-row span:nth-child(5) { display: none; }
+  .stats-bar { grid-template-columns: repeat(2,1fr); }
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>GestEvent — Control de equipos</h1>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="goPage('tecnico',this)">Técnico</button>
+    <button class="tab-btn" onclick="goPage('oficina',this)">Oficina</button>
+  </div>
+</div>
+
+<!-- ===== TÉCNICO ===== -->
+<div class="page active" id="page-tecnico">
+
+  <div class="card">
+    <h2>Datos de la visita</h2>
+    <label>Número de orden</label>
+    <input id="t-orden" placeholder="Ej: OT-2024-001" oninput="this.value=this.value.toUpperCase(); resetLista()">
+    <label>Tu nombre</label>
+    <input id="t-tecnico" placeholder="Nombre del técnico">
+    <label style="margin-top:14px; font-size:13px; font-weight:500; color:#1a1a18;">Acción</label>
+    <div class="accion-bar">
+      <button class="accion-btn active-entrega" id="btn-entrega" onclick="setAccion('entrega')">📦 Entrega al evento</button>
+      <button class="accion-btn" id="btn-recogida" onclick="setAccion('recogida')">🔄 Recogida del evento</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Introducir equipos</h2>
+
+    <!-- Uno a uno -->
+    <label style="margin-top:0; font-weight:500; color:#1a1a18;">Escanear / escribir uno a uno</label>
+    <div class="flex" style="margin-top:4px;">
+      <input id="scan-input" class="scan-input" placeholder="Escanea o escribe" onkeydown="if(event.key==='Enter')registrar()" style="flex:1;" autocomplete="off">
+      <button class="btn btn-primary" onclick="registrar()">Añadir</button>
+    </div>
+
+    <hr class="divider">
+
+    <!-- Pegar varios -->
+    <label style="font-weight:500; color:#1a1a18;">Pegar varios desde Excel</label>
+    <p style="font-size:11px; color:#888; margin-bottom:6px;">Copia la columna de equipos en Excel y pégala aquí</p>
+    <textarea id="paste-input" placeholder="Pega aquí los equipos copiados de Excel..."></textarea>
+    <div style="margin-top:8px;">
+      <button class="btn btn-primary" onclick="registrarMultiple()">Añadir todos</button>
+    </div>
+
+    <div id="dup-alert" class="dup-alert" style="margin-top:10px;">⚠️ <span id="dup-msg"></span></div>
+    <div id="feedback" style="font-size:13px; min-height:22px; margin-top:6px;"></div>
+  </div>
+
+  <div class="card">
+    <div class="flex-between" style="margin-bottom:12px;">
+      <h2 id="lista-titulo">Equipos a entregar</h2>
+      <div class="flex">
+        <span class="badge b-gray" id="conteo-badge">0 equipos</span>
+        <button class="btn btn-sm" style="color:#A32D2D;" onclick="limpiarLista()">Limpiar</button>
+      </div>
+    </div>
+
+    <div id="contador-botelleros" style="display:none; margin-bottom:12px;">
+      <div style="background:#E6F1FB; border:0.5px solid #B5D4F4; border-radius:8px; padding:10px 14px; font-size:13px; color:#185FA5;">
+        🍺 <strong>Botelleros en esta lista:</strong> <span id="num-botelleros">0</span>
+      </div>
+    </div>
+
+    <div class="scan-list" id="lista-equipos">
+      <div class="empty">Ningún equipo añadido aún.</div>
+    </div>
+    <div style="margin-top:14px;">
+      <button class="btn btn-primary" id="btn-guardar" onclick="guardarYExportar()">✓ Guardar en Google Sheets</button>
+    </div>
+    <div id="export-feedback" style="margin-top:8px; font-size:12px; color:#666; min-height:20px;"></div>
+  </div>
+
+</div>
+
+<!-- ===== OFICINA ===== -->
+<div class="page" id="page-oficina">
+
+  <div class="flex-between" style="margin-bottom:14px;">
+    <span style="font-size:13px; color:#666;" id="ultima-act"></span>
+    <button class="btn btn-sm btn-primary" onclick="cargarOficina()">Actualizar</button>
+  </div>
+
+  <div class="stats-bar" id="resumen-stats"></div>
+
+  <div class="card" style="padding:14px; margin-bottom:14px;">
+    <div class="flex" style="flex-wrap:wrap; gap:10px;">
+      <div style="flex:1; min-width:140px;">
+        <label>Filtrar por orden</label>
+        <input id="filtro-orden" placeholder="Número de orden..." oninput="filtrarTabla()">
+      </div>
+      <div style="flex:1; min-width:140px;">
+        <label>Filtrar por acción</label>
+        <select id="filtro-accion" onchange="filtrarTabla()">
+          <option value="">Todas</option>
+          <option value="entrega">Entrega</option>
+          <option value="recogida">Recogida</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="padding:0; overflow:hidden; margin-bottom:14px;">
+    <div class="tabla-header">
+      <span>Orden</span><span>Técnico</span><span>Equipo</span><span>Acción</span><span>Fecha</span>
+    </div>
+    <div id="tabla-oficina">
+      <div class="empty">Haz clic en "Actualizar" para cargar los datos.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Verificación por orden</h2>
+    <p style="font-size:12px; color:#666; margin-bottom:10px;">Compara equipos entregados vs recogidos.</p>
+    <select id="select-orden-verif" onchange="verificarOrden()">
+      <option value="">— Selecciona una orden —</option>
+    </select>
+    <div id="verif-resultado" style="margin-top:12px;"></div>
+  </div>
+
+</div>
+
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyXWvsOuloMHCS5FINkzBdFZ20KN5OOcMisrHgWUzedkMT3R2BS87Mky0bI3Aun5bIc/exec';
+
+let accion = 'entrega';
+let listaActual = [];
+let todosLosDatos = [];
+
+function goPage(p, btn) {
+  document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(x => x.classList.remove('active'));
+  document.getElementById('page-' + p).classList.add('active');
+  btn.classList.add('active');
+  if (p === 'oficina') cargarOficina();
+}
+
+function setAccion(a) {
+  accion = a;
+  listaActual = [];
+  renderLista();
+  document.getElementById('btn-entrega').className = 'accion-btn' + (a === 'entrega' ? ' active-entrega' : '');
+  document.getElementById('btn-recogida').className = 'accion-btn' + (a === 'recogida' ? ' active-recogida' : '');
+  document.getElementById('lista-titulo').textContent = a === 'entrega' ? 'Equipos a entregar' : 'Equipos a recoger';
+  document.getElementById('feedback').innerHTML = '';
+  ocultarDup();
+}
+
+function resetLista() { listaActual = []; renderLista(); ocultarDup(); }
+function ocultarDup() { document.getElementById('dup-alert').style.display = 'none'; }
+
+function procesarEquipos(texto) {
+  // Separar por saltos de línea, tabuladores, comas, punto y coma
+  // NO separar por espacios porque algunos códigos pueden tenerlos
+  const lineas = texto.split(/[\r\n\t,;]+/);
+  const equipos = [];
+  lineas.forEach(linea => {
+    const limpio = linea.trim().toUpperCase();
+    if (limpio.length > 0) equipos.push(limpio);
+  });
+  return equipos;
+}
+
+function registrar() {
+  const inp = document.getElementById('scan-input');
+  const num = inp.value.trim().toUpperCase();
+  const fb = document.getElementById('feedback');
+  const dupAlert = document.getElementById('dup-alert');
+  inp.value = ''; inp.focus();
+  dupAlert.style.display = 'none';
+  if (!num) return;
+  if (listaActual.includes(num)) {
+    dupAlert.style.display = 'block';
+    document.getElementById('dup-msg').textContent = `El equipo ${num} ya está en la lista.`;
+    return;
+  }
+  listaActual.push(num);
+  renderLista();
+  fb.innerHTML = `<span style="color:#3B6D11;">✓ ${num} añadido</span>`;
+  setTimeout(() => fb.innerHTML = '', 2500);
+}
+
+function registrarMultiple() {
+  const textarea = document.getElementById('paste-input');
+  const texto = textarea.value;
+  const fb = document.getElementById('feedback');
+  ocultarDup();
+
+  if (!texto.trim()) {
+    fb.innerHTML = '<span style="color:#A32D2D;">El área de texto está vacía.</span>';
+    return;
+  }
+
+  const equipos = procesarEquipos(texto);
+
+  if (equipos.length === 0) {
+    fb.innerHTML = '<span style="color:#A32D2D;">No se detectaron equipos válidos.</span>';
+    return;
+  }
+
+  let añadidos = 0;
+  let duplicados = [];
+
+  equipos.forEach(num => {
+    if (listaActual.includes(num)) {
+      duplicados.push(num);
+    } else {
+      listaActual.push(num);
+      añadidos++;
+    }
+  });
+
+  textarea.value = '';
+  renderLista();
+
+  let msg = '';
+  if (añadidos > 0) msg += `<span style="color:#3B6D11;">✓ ${añadidos} equipo(s) añadido(s)</span>`;
+  if (duplicados.length > 0) msg += `<span style="color:#A32D2D; margin-left:8px;">⚠️ ${duplicados.length} duplicado(s) ignorado(s): ${duplicados.join(', ')}</span>`;
+  fb.innerHTML = msg;
+  setTimeout(() => fb.innerHTML = '', 5000);
+}
+
+function esBotellero(n) { return /^CC0/i.test(n) || /^NR/i.test(n); }
+
+function renderLista() {
+  const cont = document.getElementById('lista-equipos');
+  const total = listaActual.length;
+  const botelleros = listaActual.filter(esBotellero).length;
+  document.getElementById('conteo-badge').textContent = total + ' equipos';
+  const contBot = document.getElementById('contador-botelleros');
+  if (total > 0) { contBot.style.display = 'block'; document.getElementById('num-botelleros').textContent = botelleros; }
+  else contBot.style.display = 'none';
+  if (total === 0) { cont.innerHTML = '<div class="empty">Ningún equipo añadido aún.</div>'; return; }
+  cont.innerHTML = listaActual.map((n, i) =>
+    `<div class="scan-item">
+      <span><strong>${n}</strong> ${esBotellero(n) ? '<span class="badge b-info" style="margin-left:4px;">Botellero</span>' : ''}</span>
+      <button class="btn btn-sm" style="color:#A32D2D;" onclick="quitarEquipo(${i})">✕</button>
+    </div>`
+  ).join('');
+}
+
+function quitarEquipo(i) { listaActual.splice(i, 1); renderLista(); ocultarDup(); }
+function limpiarLista() { if (listaActual.length === 0) return; if (confirm('¿Limpiar la lista?')) { listaActual = []; renderLista(); ocultarDup(); } }
+
+async function guardarYExportar() {
+  const orden = document.getElementById('t-orden').value.trim().toUpperCase();
+  const tecnico = document.getElementById('t-tecnico').value.trim();
+  const ef = document.getElementById('export-feedback');
+  if (!orden) { ef.innerHTML = '<span style="color:#A32D2D;">Indica el número de orden.</span>'; return; }
+  if (!tecnico) { ef.innerHTML = '<span style="color:#A32D2D;">Indica tu nombre.</span>'; return; }
+  if (listaActual.length === 0) { ef.innerHTML = '<span style="color:#A32D2D;">No hay equipos en la lista.</span>'; return; }
+  ef.innerHTML = '<span class="spinner"></span> Guardando en Google Sheets...';
+  document.getElementById('btn-guardar').disabled = true;
+  try {
+    await fetch(SCRIPT_URL, {
+      method: 'POST', mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orden, tecnico, equipos: listaActual, accion })
+    });
+    ef.innerHTML = `<span style="color:#3B6D11;">✓ ${listaActual.length} equipos guardados en Google Sheets</span>`;
+    listaActual = []; renderLista(); ocultarDup();
+  } catch(e) {
+    ef.innerHTML = `<span style="color:#A32D2D;">Error: ${e.message}</span>`;
+  }
+  document.getElementById('btn-guardar').disabled = false;
+}
+
+async function cargarOficina() {
+  const cont = document.getElementById('tabla-oficina');
+  cont.innerHTML = '<div class="empty"><span class="spinner"></span> Cargando datos...</div>';
+  try {
+    const r = await fetch(SCRIPT_URL + '?t=' + Date.now());
+    const rows = await r.json();
+    todosLosDatos = rows.slice(1).map(r => ({
+      orden: String(r[0]||'').trim(), tecnico: String(r[1]||'').trim(),
+      equipo: String(r[2]||'').trim().toUpperCase(), accion: String(r[3]||'').trim().toLowerCase(),
+      fecha: String(r[4]||'').trim()
+    })).filter(r => r.orden && r.equipo);
+    document.getElementById('ultima-act').textContent = 'Actualizado: ' + new Date().toLocaleString('es-ES');
+    renderResumen(); filtrarTabla(); renderSelectOrdenes();
+  } catch(e) {
+    cont.innerHTML = `<div class="alert alert-err">Error al cargar: ${e.message}</div>`;
+  }
+}
+
+function renderResumen() {
+  const ordenes = [...new Set(todosLosDatos.map(r => r.orden))].length;
+  const entregas = todosLosDatos.filter(r => r.accion === 'entrega').length;
+  const recogidas = todosLosDatos.filter(r => r.accion === 'recogida').length;
+  document.getElementById('resumen-stats').innerHTML = `
+    <div class="stat-box"><div class="val">${ordenes}</div><div class="lbl">Órdenes</div></div>
+    <div class="stat-box" style="background:#EAF3DE;border-color:#C0DD97;"><div class="val" style="color:#3B6D11;">${entregas}</div><div class="lbl" style="color:#3B6D11;">Entregas</div></div>
+    <div class="stat-box" style="background:#E6F1FB;border-color:#B5D4F4;"><div class="val" style="color:#185FA5;">${recogidas}</div><div class="lbl" style="color:#185FA5;">Recogidas</div></div>`;
+}
+
+function filtrarTabla() {
+  const fOrden = document.getElementById('filtro-orden').value.toLowerCase();
+  const fAccion = document.getElementById('filtro-accion').value;
+  const filtrados = todosLosDatos.filter(r =>
+    (!fOrden || r.orden.toLowerCase().includes(fOrden)) && (!fAccion || r.accion === fAccion)
+  );
+  const cont = document.getElementById('tabla-oficina');
+  if (filtrados.length === 0) { cont.innerHTML = '<div class="empty">No hay registros.</div>'; return; }
+  cont.innerHTML = filtrados.map(r => `
+    <div class="tabla-row ${r.accion === 'entrega' ? 'row-entrega' : 'row-recogida'}">
+      <span><strong>${r.orden}</strong></span>
+      <span>${r.tecnico}</span><span>${r.equipo}</span>
+      <span>${r.accion === 'entrega' ? '<span class="badge b-ok">Entrega</span>' : '<span class="badge b-info">Recogida</span>'}</span>
+      <span style="font-size:11px;">${r.fecha}</span>
+    </div>`).join('');
+}
+
+function renderSelectOrdenes() {
+  const sel = document.getElementById('select-orden-verif');
+  const ordenes = [...new Set(todosLosDatos.map(r => r.orden))].sort();
+  sel.innerHTML = '<option value="">— Selecciona una orden —</option>';
+  ordenes.forEach(o => sel.innerHTML += `<option value="${o}">${o}</option>`);
+  document.getElementById('verif-resultado').innerHTML = '';
+}
+
+function verificarOrden() {
+  const ord = document.getElementById('select-orden-verif').value;
+  const cont = document.getElementById('verif-resultado');
+  if (!ord) { cont.innerHTML = ''; return; }
+  const datos = todosLosDatos.filter(r => r.orden === ord);
+  const entregados = [...new Set(datos.filter(r => r.accion === 'entrega').map(r => r.equipo))];
+  const recogidos  = [...new Set(datos.filter(r => r.accion === 'recogida').map(r => r.equipo))];
+  const todos = [...new Set([...entregados, ...recogidos])].sort();
+  if (todos.length === 0) { cont.innerHTML = '<div class="alert alert-warn">No hay registros para esta orden.</div>'; return; }
+  let okCount = 0, warnCount = 0, errCount = 0;
+  const filas = todos.map(n => {
+    const eEnt = entregados.includes(n), eRec = recogidos.includes(n);
+    let badge = '', bg = '';
+    if (eEnt && eRec)       { badge = '<span class="badge b-ok">OK</span>';            okCount++;   bg = 'background:#f8fdf5;'; }
+    else if (eEnt && !eRec) { badge = '<span class="badge b-warn">No recogido</span>'; warnCount++; bg = 'background:#fff8f0;border-left:3px solid #EF9F27;'; }
+    else                    { badge = '<span class="badge b-err">No entregado</span>'; errCount++;  bg = 'background:#fff0f0;border-left:3px solid #E24B4A;'; }
+    return `<div class="tabla-row" style="${bg}">
+      <span><strong>${n}</strong></span>
+      <span>${eEnt ? '<span class="badge b-ok">Sí</span>' : '<span class="badge b-gray">No</span>'}</span>
+      <span>${eRec ? '<span class="badge b-info">Sí</span>' : '<span class="badge b-gray">No</span>'}</span>
+      <span>${badge}</span><span></span>
+    </div>`;
+  }).join('');
+  const resumen = errCount + warnCount === 0
+    ? `<div class="alert alert-ok">✓ Todo cuadra — ${okCount} equipo(s) OK</div>`
+    : `<div class="alert alert-err">⚠️ ${errCount + warnCount} incidencia(s)</div>`;
+  cont.innerHTML = `${resumen}
+    <div style="background:#fff;border:0.5px solid #ddd;border-radius:10px;overflow:hidden;margin-top:10px;">
+      <div class="tabla-header"><span>Equipo</span><span>Entregado</span><span>Recogido</span><span>Estado</span><span></span></div>
+      ${filas}
+    </div>`;
+}
+</script>
+</body>
+</html>
