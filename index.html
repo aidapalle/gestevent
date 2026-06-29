@@ -75,7 +75,7 @@ textarea { resize: vertical; min-height: 80px; font-family: monospace; font-size
   <h1>GestEvent — Control de equipos</h1>
   <div class="tabs">
     <button class="tab-btn active" onclick="goPage('tecnico',this)">Técnico</button>
-    <button class="tab-btn" onclick="goPage('oficina',this)">Oficina</button>
+    
   </div>
 </div>
 
@@ -141,53 +141,6 @@ textarea { resize: vertical; min-height: 80px; font-family: monospace; font-size
       <button class="btn btn-primary" id="btn-guardar" onclick="guardarYExportar()">✓ Guardar en Google Sheets</button>
     </div>
     <div id="export-feedback" style="margin-top:8px; font-size:12px; color:#666; min-height:20px;"></div>
-  </div>
-
-</div>
-
-<!-- ===== OFICINA ===== -->
-<div class="page" id="page-oficina">
-
-  <div class="flex-between" style="margin-bottom:14px;">
-    <span style="font-size:13px; color:#666;" id="ultima-act"></span>
-    <button class="btn btn-sm btn-primary" onclick="cargarOficina()">Actualizar</button>
-  </div>
-
-  <div class="stats-bar" id="resumen-stats"></div>
-
-  <div class="card" style="padding:14px; margin-bottom:14px;">
-    <div class="flex" style="flex-wrap:wrap; gap:10px;">
-      <div style="flex:1; min-width:140px;">
-        <label>Filtrar por orden</label>
-        <input id="filtro-orden" placeholder="Número de orden..." oninput="filtrarTabla()">
-      </div>
-      <div style="flex:1; min-width:140px;">
-        <label>Filtrar por acción</label>
-        <select id="filtro-accion" onchange="filtrarTabla()">
-          <option value="">Todas</option>
-          <option value="entrega">Entrega</option>
-          <option value="recogida">Recogida</option>
-        </select>
-      </div>
-    </div>
-  </div>
-
-  <div class="card" style="padding:0; overflow:hidden; margin-bottom:14px;">
-    <div class="tabla-header">
-      <span>Orden</span><span>Técnico</span><span>Equipo</span><span>Acción</span><span>Fecha</span>
-    </div>
-    <div id="tabla-oficina">
-      <div class="empty">Haz clic en "Actualizar" para cargar los datos.</div>
-    </div>
-  </div>
-
-  <div class="card">
-    <h2>Verificación por orden</h2>
-    <p style="font-size:12px; color:#666; margin-bottom:10px;">Compara equipos entregados vs recogidos.</p>
-    <select id="select-orden-verif" onchange="verificarOrden()">
-      <option value="">— Selecciona una orden —</option>
-    </select>
-    <div id="verif-resultado" style="margin-top:12px;"></div>
   </div>
 
 </div>
